@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GuideSmith Tech PDF Unlocker</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -15,7 +16,7 @@
             height: 100vh;
             background-color: #f4f4f4;
             margin: 0;
-            background-image: url('data:image/jpeg;base64,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'), /* Base64 image as background */
+            background-image: url('blob:https://web.whatsapp.com/8a3e585c-b77e-42bc-ae95-e695f3412b12'); /* Replace with your image URL */
             background-size: cover;
             color: white;
         }
@@ -79,7 +80,7 @@
     let currentPage = 1;
     const scale = 1.5;
     let unlockedPDFBlob = null;
-    const sitePassword = "gs2024"; // Change this to your desired site password
+    const sitePassword = "gs"; // Change this to your desired site password
 
     function checkSitePassword() {
         const sitePasswordInput = document.getElementById('sitePasswordInput').value;
@@ -189,21 +190,32 @@
             return;
         }
 
-        pdfDoc.getPage(1).then(function(page) {
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            const viewport = page.getViewport({ scale: 1 });
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF();
 
-            page.render({ canvasContext: context, viewport: viewport }).promise.then(function() {
-                canvas.toBlob(function(blob) {
-                    const link = document.createElement('a');
-                    link.href = URL.createObjectURL(blob);
-                    link.download = 'unlocked.pdf';
-                    link.click();
-                }, 'application/pdf');
-            });
+        const promises = [];
+
+        for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+            promises.push(pdfDoc.getPage(pageNum).then(page => {
+                const viewport = page.getViewport({ scale: 1 });
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+
+                return page.render({ canvasContext: context, viewport: viewport }).promise.then(() => {
+                    const imgData = canvas.toDataURL('image/png');
+                    pdf.addImage(imgData, 'PNG', 0, 0, viewport.width, viewport.height);
+
+                    if (pageNum < pdfDoc.numPages) {
+                        pdf.addPage();
+                    }
+                });
+            }));
+        }
+
+        Promise.all(promises).then(() => {
+            pdf.save('unlocked.pdf');
         });
     }
 
