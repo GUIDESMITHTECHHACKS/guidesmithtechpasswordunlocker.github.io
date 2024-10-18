@@ -15,13 +15,18 @@
             height: 100vh;
             background-color: #f4f4f4;
             margin: 0;
+            background-image: url('https://example.com/background1.jpg');
+            background-size: cover;
+            color: white;
         }
         .container {
             text-align: center;
-            background-color: white;
+            background-color: rgba(0, 0, 0, 0.7);
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0px 0px 15px rgba(0,0,0,0.1);
+            box-shadow: 0px 0px 15px rgba(0,0,0,0.5);
+            width: 80%;
+            max-width: 600px;
         }
         h1 {
             color: #007BFF;
@@ -39,22 +44,93 @@
             width: 80%;
             display: none;
         }
+        .navigation {
+            margin-top: 10px;
+        }
+        #downloadBtn {
+            display: none;
+            margin-top: 20px;
+        }
+        #loader {
+            display: none;
+            color: #007BFF;
+        }
+        #feedbackForm {
+            display: none;
+            margin-top: 20px;
+        }
+        #helpButton {
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
+<div class="container" id="passwordContainer">
+    <h1>Enter Password to Access PDF Unlocker</h1>
+    <input type="text" id="sitePasswordInput" placeholder="Enter site password">
+    <button onclick="checkSitePassword()">Access PDF Unlocker</button>
+    <p class="error" id="siteErrorMsg"></p>
+</div>
+
+<div class="container" id="unlockerContainer" style="display:none;">
     <h1>GuideSmith Tech PDF Unlocker</h1>
-    <p>Select a password-protected PDF file:</p>
+    <p>Select a password-protected PDF file (Max: 5MB):</p>
     <input type="file" id="fileInput" accept=".pdf">
     <input type="text" id="passwordInput" placeholder="Enter PDF password">
     <button onclick="unlockPDF()">Unlock PDF</button>
     <p class="error" id="errorMsg"></p>
+    <p id="loader">Unlocking PDF, please wait...</p>
+
+    <div class="navigation">
+        <button id="prevPage" onclick="changePage(-1)" style="display:none;">Previous Page</button>
+        <button id="nextPage" onclick="changePage(1)" style="display:none;">Next Page</button>
+    </div>
+
+    <button id="downloadBtn" onclick="downloadPDF()">Download Unlocked PDF</button>
+    <button id="feedbackButton" onclick="toggleFeedbackForm()">Give Feedback</button>
+</div>
+
+<div id="feedbackForm">
+    <h2>Feedback Form</h2>
+    <textarea id="feedbackInput" placeholder="Enter your feedback here..."></textarea>
+    <button onclick="submitFeedback()">Submit Feedback</button>
+    <p class="error" id="feedbackErrorMsg"></p>
 </div>
 
 <canvas id="pdfViewer"></canvas>
 
 <script>
+    let pdfDoc = null;
+    let currentPage = 1;
+    const scale = 1.5;
+    let unlockedPDFBlob = null;
+    const sitePassword = "gs2024"; // Change this to your desired site password
+
+    function checkSitePassword() {
+        const sitePasswordInput = document.getElementById('sitePasswordInput').value;
+        const siteErrorMsg = document.getElementById('siteErrorMsg');
+
+        if (sitePasswordInput === sitePassword) {
+            document.getElementById('passwordContainer').style.display = 'none';
+            document.getElementById('unlockerContainer').style.display = 'block';
+            siteErrorMsg.textContent = '';
+            changeBackground();
+        } else {
+            siteErrorMsg.textContent = "Incorrect password. Please try again.";
+        }
+    }
+
+    function changeBackground() {
+        const backgrounds = [
+            'https://example.com/background1.jpg',
+            'https://example.com/background2.jpg',
+            'https://example.com/background3.jpg'
+        ];
+        const randomIndex = Math.floor(Math.random() * backgrounds.length);
+        document.body.style.backgroundImage = `url(${backgrounds[randomIndex]})`;
+    }
+
     function unlockPDF() {
         const fileInput = document.getElementById('fileInput').files[0];
         const password = document.getElementById('passwordInput').value;
@@ -62,6 +138,11 @@
 
         if (!fileInput) {
             errorMsg.textContent = "Please select a PDF file.";
+            return;
+        }
+
+        if (fileInput.size > 5 * 1024 * 1024) { // File size limit check (5MB)
+            errorMsg.textContent = "File size exceeds 5MB limit.";
             return;
         }
 
@@ -74,31 +155,87 @@
                 password: password
             });
 
+            document.getElementById('loader').style.display = 'block'; // Show loader
+
             loadingTask.promise.then(function(pdf) {
-                pdf.getPage(1).then(function(page) {
-                    const scale = 1.5;
-                    const viewport = page.getViewport({ scale: scale });
-
-                    const canvas = document.getElementById('pdfViewer');
-                    const context = canvas.getContext('2d');
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
-                    canvas.style.display = 'block';  // Show canvas
-
-                    page.render({
-                        canvasContext: context,
-                        viewport: viewport
-                    }).promise.then(function() {
-                        errorMsg.textContent = ""; // Clear error message if successful
-                    });
-                });
+                pdfDoc = pdf;
+                document.getElementById('prevPage').style.display = 'inline';
+                document.getElementById('nextPage').style.display = 'inline';
+                currentPage = 1;
+                renderPage(currentPage);
+                prepareDownloadPDF();
+                document.getElementById('loader').style.display = 'none'; // Hide loader
             }).catch(function(error) {
                 errorMsg.textContent = 'Error: ' + error.message;
-                document.getElementById('pdfViewer').style.display = 'none'; // Hide canvas
+                document.getElementById('pdfViewer').style.display = 'none';
+                document.getElementById('prevPage').style.display = 'none';
+                document.getElementById('nextPage').style.display = 'none';
+                document.getElementById('downloadBtn').style.display = 'none';
+                document.getElementById('loader').style.display = 'none'; // Hide loader
             });
         };
 
         fileReader.readAsArrayBuffer(fileInput);
+    }
+
+    function renderPage(pageNum) {
+        pdfDoc.getPage(pageNum).then(function(page) {
+            const viewport = page.getViewport({ scale: scale });
+            const canvas = document.getElementById('pdfViewer');
+            const context = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            canvas.style.display = 'block';
+
+            page.render({
+                canvasContext: context,
+                viewport: viewport
+            });
+        });
+    }
+
+    function changePage(direction) {
+        const newPage = currentPage + direction;
+
+        if (newPage >= 1 && newPage <= pdfDoc.numPages) {
+            currentPage = newPage;
+            renderPage(currentPage);
+        }
+    }
+
+    function prepareDownloadPDF() {
+        pdfDoc.save().then(function(pdfData) {
+            unlockedPDFBlob = new Blob([pdfData], { type: 'application/pdf' });
+            const downloadBtn = document.getElementById('downloadBtn');
+            downloadBtn.style.display = 'block';
+        });
+    }
+
+    function downloadPDF() {
+        const downloadLink = document.createElement('a');
+        downloadLink.href = URL.createObjectURL(unlockedPDFBlob);
+        downloadLink.download = 'unlocked.pdf';
+        downloadLink.click();
+    }
+
+    function toggleFeedbackForm() {
+        const feedbackForm = document.getElementById('feedbackForm');
+        feedbackForm.style.display = feedbackForm.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function submitFeedback() {
+        const feedbackInput = document.getElementById('feedbackInput').value;
+        const feedbackErrorMsg = document.getElementById('feedbackErrorMsg');
+
+        if (!feedbackInput) {
+            feedbackErrorMsg.textContent = "Please enter your feedback.";
+            return;
+        }
+
+        // Here you would send the feedback to your server (not implemented)
+        console.log("Feedback submitted:", feedbackInput); // For demo purposes
+        feedbackErrorMsg.textContent = "Thank you for your feedback!";
+        document.getElementById('feedbackInput').value = ''; // Clear the input
     }
 </script>
 
