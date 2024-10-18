@@ -3,33 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GuideSmith Tech Password Unlocker</title>
-    <script>
-        // Set your password here
-        const correctPassword = "gs2024"; // Update this to your desired password
-
-        function checkPassword() {
-            const enteredPassword = prompt("Please enter the password:");
-            if (enteredPassword === correctPassword) {
-                alert("Access Granted");
-                document.getElementById("content").style.display = "block"; // Show content
-            } else {
-                alert("Incorrect password! You will be redirected.");
-                window.location = "https://github.com"; // Redirect if wrong password
-            }
-        }
-    </script>
+    <title>GuideSmith Tech PDF Unlocker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
     <style>
-        #content {
-            display: none; /* Hide content initially */
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #f4f4f4;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 15px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #007BFF;
+        }
+        input, button {
+            padding: 10px;
+            margin: 10px;
+            width: 80%;
+            box-sizing: border-box;
+        }
+        #pdfViewer {
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            height: 500px;
+            width: 80%;
+            display: none;
         }
     </style>
 </head>
-<body onload="checkPassword()">
-    <h1>GuideSmith Tech Password Unlocker</h1>
-    <div id="content">
-        <p>Welcome to the PDF password unlocker tool. The tool is still under construction.</p>
-        <!-- You can add more content here related to your PDF password unlocking tool -->
-    </div>
+<body>
+
+<div class="container">
+    <h1>GuideSmith Tech PDF Unlocker</h1>
+    <p>Select a password-protected PDF file:</p>
+    <input type="file" id="fileInput" accept=".pdf">
+    <input type="text" id="passwordInput" placeholder="Enter PDF password">
+    <button onclick="unlockPDF()">Unlock PDF</button>
+    <p class="error" id="errorMsg"></p>
+</div>
+
+<canvas id="pdfViewer"></canvas>
+
+<script>
+    function unlockPDF() {
+        const fileInput = document.getElementById('fileInput').files[0];
+        const password = document.getElementById('passwordInput').value;
+        const errorMsg = document.getElementById('errorMsg');
+
+        if (!fileInput) {
+            errorMsg.textContent = "Please select a PDF file.";
+            return;
+        }
+
+        const fileReader = new FileReader();
+        fileReader.onload = function() {
+            const typedArray = new Uint8Array(this.result);
+
+            const loadingTask = pdfjsLib.getDocument({
+                data: typedArray,
+                password: password
+            });
+
+            loadingTask.promise.then(function(pdf) {
+                pdf.getPage(1).then(function(page) {
+                    const scale = 1.5;
+                    const viewport = page.getViewport({ scale: scale });
+
+                    const canvas = document.getElementById('pdfViewer');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    canvas.style.display = 'block';  // Show canvas
+
+                    page.render({
+                        canvasContext: context,
+                        viewport: viewport
+                    }).promise.then(function() {
+                        errorMsg.textContent = ""; // Clear error message if successful
+                    });
+                });
+            }).catch(function(error) {
+                errorMsg.textContent = 'Error: ' + error.message;
+                document.getElementById('pdfViewer').style.display = 'none'; // Hide canvas
+            });
+        };
+
+        fileReader.readAsArrayBuffer(fileInput);
+    }
+</script>
+
 </body>
 </html>
