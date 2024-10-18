@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GuideSmith Tech Password Unlocker</title>
+    <script>
+        // Set your password here
+        const correctPassword = "gs2024"; // Update this to your desired password
+
+        function checkPassword() {
+            const enteredPassword = prompt("Please enter the password:");
+            if (enteredPassword === correctPassword) {
+                alert("Access Granted");
+                document.getElementById("content").style.display = "block"; // Show content
+            } else {
+                alert("Incorrect password! You will be redirected.");
+                window.location = "https://github.com"; // Redirect if wrong password
+            }
+        }
+    </script>
+    <style>
+        #content {
+            display: none; /* Hide content initially */
+        }
+    </style>
+</head>
+<body onload="checkPassword()">
+    <h1>GuideSmith Tech Password Unlocker</h1>
+    <div id="content">
+        <p>Welcome to the PDF password unlocker tool. The tool is still under construction.</p>
+        <!-- You can add more content here related to your PDF password unlocking tool -->
+    </div>
+</body>
+</html>
