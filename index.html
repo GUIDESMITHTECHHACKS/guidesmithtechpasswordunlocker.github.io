@@ -16,7 +16,7 @@
             height: 100vh;
             background-color: #f4f4f4;
             margin: 0;
-            background-image: url('blob:https://web.whatsapp.com/8a3e585c-b77e-42bc-ae95-e695f3412b12'); /* Replace with your image URL */
+            background-image: url('file:///C:/Users/user/OneDrive/Pictures/SpotBright/Auckland,%20New%20Zealand%201920x1080.jpg'); /* Replace with your image URL */
             background-size: cover;
             color: white;
         }
@@ -79,8 +79,9 @@
     let pdfDoc = null;
     let currentPage = 1;
     const scale = 1.5;
-    let unlockedPDFBlob = null;
-    const sitePassword = "gs"; // Change this to your desired site password
+    const letterSizeWidth = 210; // A4 width in mm
+    const letterSizeHeight = 297; // A4 height in mm
+    const sitePassword = "gs20"; // Change this to your desired site password
 
     function checkSitePassword() {
         const sitePasswordInput = document.getElementById('sitePasswordInput').value;
@@ -191,13 +192,19 @@
         }
 
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF();
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4', // Letter size
+            putOnlyUsedFonts: true,
+            floatPrecision: 16 // Better precision for coordinates
+        });
 
         const promises = [];
 
         for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
             promises.push(pdfDoc.getPage(pageNum).then(page => {
-                const viewport = page.getViewport({ scale: 1 });
+                const viewport = page.getViewport({ scale: 2 }); // Higher scale for better quality
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d');
                 canvas.width = viewport.width;
@@ -205,7 +212,10 @@
 
                 return page.render({ canvasContext: context, viewport: viewport }).promise.then(() => {
                     const imgData = canvas.toDataURL('image/png');
-                    pdf.addImage(imgData, 'PNG', 0, 0, viewport.width, viewport.height);
+                    const imgWidth = letterSizeWidth; // Width in mm
+                    const imgHeight = (viewport.height * letterSizeWidth) / viewport.width; // Maintain aspect ratio
+
+                    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
 
                     if (pageNum < pdfDoc.numPages) {
                         pdf.addPage();
@@ -235,9 +245,8 @@
 
         console.log("Feedback submitted:", feedbackInput); // For demo purposes
         feedbackErrorMsg.textContent = "Thank you for your feedback!";
-        document.getElementById('feedbackInput').value = ''; // Clear the input
+        document.getElementById('feedbackInput').value = ''; // Clear input
     }
 </script>
-
 </body>
 </html>
